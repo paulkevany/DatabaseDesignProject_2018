@@ -1,0 +1,393 @@
+import java.sql.DriverManager;
+import java.util.Scanner;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.PreparedStatement;
+
+public class DatabaseController {
+
+	Scanner input = new Scanner(System.in);
+	String option;
+	UpdateQueryController uc = new UpdateQueryController();
+	MySQLCon con = new MySQLCon();
+	Main main = new Main(); 
+	
+	public void getProductsFromDB() {
+		
+		
+
+		
+
+		con.main("select * from Product");	
+		
+		
+
+		// Connection is closed from the MySQLCon class so we won't have unnecessary
+		// connections open after were finished with a particular method
+
+	}
+
+	public void getCustomersFromDB() {
+		try {
+			
+			con.main("select * from User");
+			System.out.println("\n");
+
+		} catch (Exception e) {
+			System.out.println("Error Occured");
+
+		}
+	}
+	
+	
+	public void getCartsFromDB() {
+		
+		//Use a join to display a product name
+		System.out.println("Here are all the carts:  ");
+		
+		con.main("select User.Username "
+				+ "from User JOIN Cart ON Cart.UserID = User.UserID LIMIT 1");
+		
+		con.main("select Cart.CartID, Product.ProductID, Name from Product JOIN Cart ON Cart.ProductID = Product.ProductID");
+		//Second join to associate the UserID in the Cart with the Users.UserID
+		
+		
+	}
+	
+	
+	public void editProducts() {
+		
+		String host= "localhost";
+		String user = "root";
+		String password = "";
+		try {
+		
+		Class.forName("com.mysql.jdbc.Driver");
+		
+		}catch(Exception e) {
+			
+			System.out.println("Driver not found!");
+		}
+		
+		
+		
+		int idEntered = 0; //To choose the Product to edit
+		//Declare Attributes for new values
+		String newName; 
+		String newDescription;
+		double newPrice;
+		int newQuantity;
+		
+		try {
+		getProductsFromDB();
+		
+		System.out.println("Would you like to edit a product (y/n)?");
+		option = input.nextLine();
+		
+		switch(option) {
+		
+		case "y":
+			
+			try {
+			if(idEntered < 1) {
+			
+			System.out.println("Enter a ProductID to edit/update: ");
+			
+			idEntered = input.nextInt();
+			input.nextLine(); //Stop from skipping input
+			}
+			
+			System.out.println("Enter a new Name: ");
+			newName = input.nextLine();
+			
+			
+			
+			System.out.println("Enter a new Description: ");
+			newDescription = input.nextLine();
+			System.out.println("Enter a new Price: ");
+			
+			newPrice = input.nextDouble();
+			
+			
+			//Strip any special characters for security reasons (Protect from sqlInjection)
+			
+			newName.replaceAll("[^a-zA-Z0-9]", "");
+			newDescription.replaceAll("[^a-zA-Z0-9]", "");
+			
+			
+			uc.Update("UPDATE Product SET Name = " +newName + ", Description = "+  newDescription + " , Cost =  "+ newPrice + "WHERE ProductID = " + idEntered);
+			
+			
+			
+			
+			}catch(Exception e) {
+				
+				System.out.println("Unable to update product!");
+			}
+					
+		
+			
+			main.askForNumber();
+			
+			
+			break;
+			
+			
+		case "n": 
+			
+			System.out.println("Would you like to delete a Product?(y/n)");
+			
+			option = input.nextLine();
+			
+		switch(option) {
+		
+		case "y": 
+			System.out.println("Enter a ProductID to Delete: ");
+			
+			idEntered = input.nextInt();
+			
+			System.out.println();
+			
+			uc.Update("DELETE from Product WHERE ProductID =" + idEntered);
+
+			
+		default: 
+			main.askForNumber();
+			
+		
+		}
+			
+			
+			default:
+				
+				//new Main().askForNumber();
+				
+				break;
+
+			
+		
+		}
+			
+		
+		}catch(Exception e) {
+			
+			System.out.println("An error has occured: " + e);
+		}
+		
+		
+	}
+	
+	
+	public void editUserInfo() {
+		
+		String newUsername;
+		String newEmail;
+	
+		String newAddress;
+		String newPhone; //Stored as a string as some people add + for area code etc
+		int idEntered = 0;
+		
+		try {
+			
+			
+			System.out.println("Would you like to edit customer info? (y/n)?");
+			option = input.nextLine();
+			
+			
+			switch(option) {
+			
+			
+			case "y":
+				getCustomersFromDB();
+				
+				System.out.println("Enter a UserID to edit/update: ");
+				idEntered = input.nextInt();
+				input.nextLine(); //Stop from skipping input
+				
+				
+				//CHeck if the user exists in the db 
+				
+				checkIfUserExists(idEntered);
+				
+				
+				
+				
+				System.out.println("Enter a new Username: ");
+				newUsername = input.nextLine();
+				
+				System.out.println("Enter a new Email: ");
+				newEmail = input.nextLine();
+				
+				System.out.println("Enter a new Address: ");
+				newAddress = input.nextLine();
+				
+				System.out.println("Enter a new Phone: ");
+				newPhone = input.nextLine();
+				
+				
+				//Call the MySQLCon class to update the product details 
+				
+				
+				//Use Prepared statements 
+				
+				 uc.Update("Update User SET Username = " + newUsername+", email = " + newEmail + ", address = " + newAddress + ", phone = " + newPhone + " WHERE UserID = " + idEntered);
+				
+				
+				
+				System.out.println("Attributes set, trying to save..");
+				try {
+				
+				
+				}catch(Exception e) {
+					
+					System.out.println("Unable to update customer info! ");
+				}
+				
+				
+				
+				
+				main.askForNumber();
+				
+				
+				break;
+				
+				
+			case "n":
+				getCustomersFromDB();
+				//Here we will ask if the user wants to delete a user
+				
+				System.out.println("Would you like to delete a user? (y/n)");
+				option = input.nextLine();
+				
+				switch(option) {
+				case "y":
+					
+					//Delete the user from database
+					System.out.println("Enter UserID of the Customer you want to delete: ");
+					idEntered = input.nextInt();
+					
+					System.out.println("Are you sure?");
+					input.nextLine();
+					
+					option = input.nextLine();
+					
+					
+				default: 
+					
+					//main.askForNumber();
+				
+					break;
+				}
+					
+				switch(option) {
+				case "y":
+					
+					uc.Update("DELETE FROM Users WHERE UserID = " + idEntered);
+					
+					break;
+					
+					default:
+						
+					//main.askForNumber();
+						
+						break;
+				
+				
+				}
+					
+					
+					
+					break;
+				
+				
+				}
+				
+			
+		
+		}catch(Exception e){
+			
+			System.out.println("An error Occured: " + e);
+		}
+	}
+	
+	
+	public void enterStore() {
+		
+		//List all products
+		int idEntered = 0;
+		
+		System.out.println("\nProducts For Sale: ");
+		
+		getProductsFromDB();
+		
+		System.out.println("\nWould you like to buy something (y/n)? ");
+		
+		option = input.next();
+		
+		switch(option) {
+		
+		case "y":
+			
+			System.out.println("Enter a productID to purchase: ");
+			
+			idEntered = input.nextInt();
+			
+			con.main("select Name, Description, Cost from Product where ProductID = " +idEntered);
+			
+			System.out.println("How many would you like to buy? ");
+			
+			int quantity = input.nextInt();
+			
+			System.out.println("Add to Cart? (y/n)");
+			option = input.next();
+			
+			
+			switch(option) {
+			
+			
+			case "y":
+				System.out.println("What is your UserID? ");
+				int userIDEntered = input.nextInt();
+				
+				uc.Update("INSERT into Cart (ProductID, UserID) values( " +idEntered +"," + userIDEntered + ")");
+			
+				System.out.println("Adding to Cart");
+				
+				break;
+			
+			case "n":
+				//Dont add product to cart
+				
+				System.out.println("Exiting...");
+				break;
+			}
+			
+			
+			
+			
+			break;
+		
+		
+		}
+		
+		
+		
+		
+	
+	
+	}
+	
+	
+	public void checkIfUserExists(int idEntered) {
+		
+		
+		
+		
+		
+		
+	}
+	
+	
+	
+	
+}
